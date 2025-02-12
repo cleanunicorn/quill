@@ -12,6 +12,14 @@ def sanitize_filename(filename):
     return filename.strip()
 
 
+def seconds_to_timestamp(seconds):
+    """Convert seconds to HH:mm:ss format."""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    seconds = int(seconds % 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
 @click.command()
 @click.argument("input_source")
 @click.argument("output_file", required=False)
@@ -102,38 +110,31 @@ def transcribe(
                 f"Detected language '{info.language}' with probability {info.language_probability}"
             )
 
-        # Build transcription
-        transcription = ""
-        grouped_transcription = []
-        current_group = ""
-        current_start = None
+        # Open the output file for writing
+        with open(output_file, "w", encoding="utf-8") as f:
+            click.echo("\nTranscription:")
+            current_group = ""
+            current_start = None
 
-        click.echo("\nTranscription:")
-        for segment in segments:
-            if timestamps:
-                if current_start is None:
-                    current_start = segment.start
-                current_group += f"{segment.text} "
-                
-                # Output and store the current segment
-                segment_text = f"[{current_start:.2f}s -> {segment.end:.2f}s] {current_group.strip()}"
-                click.echo(segment_text)
-                grouped_transcription.append(segment_text)
-                transcription += segment_text + "\n"
-                
-                current_group = ""
-                current_start = None
-            else:
-                # Output and store the current segment
-                click.echo(segment.text)
-                current_group += f"{segment.text} "
-                transcription += segment.text + " "
-
-        # Write to output file
-        with open(
-            output_file, "w", encoding="utf-8"
-        ) as f:  # Ensure writing formatted transcription
-            f.write(transcription)
+            for segment in segments:
+                if timestamps:
+                    if current_start is None:
+                        current_start = segment.start
+                    current_group += f"{segment.text} "
+                    
+                    # Output and store the current segment with HH:mm:ss format
+                    start_time = seconds_to_timestamp(current_start)
+                    end_time = seconds_to_timestamp(segment.end)
+                    segment_text = f"[{start_time} -> {end_time}] {current_group.strip()}"
+                    click.echo(segment_text)
+                    f.write(segment_text + "\n")
+                    
+                    current_group = ""
+                    current_start = None
+                else:
+                    # Output and store the current segment
+                    click.echo(segment.text)
+                    f.write(segment.text + " ")
 
         click.echo(f"\nTranscription saved to: {output_file}")
 
