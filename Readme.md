@@ -13,20 +13,23 @@ A command-line tool for transcribing audio files, YouTube videos, and podcasts u
 
 ## Installation
 
+## Installation
+
 ```bash
-pip install -e .
+# Install dependencies and create virtual environment
+uv sync
 ```
 
 ## Usage
 
 ```bash
-quill INPUT_SOURCE OUTPUT_FILE [--model MODEL] [--device DEVICE] [--language LANGUAGE]
+uv run quill INPUT_SOURCE OUTPUT_FILE [--model MODEL] [--device DEVICE] [--language LANGUAGE]
 
 # Examples:
-quill audio.mp3 transcript.txt
-quill https://youtube.com/watch?v=... transcript.txt
-quill https://example.com/audio.mp3 transcript.txt --model large
-quill podcast.mp3 output.txt --device cuda --language en
+uv run quill audio.mp3 transcript.txt
+uv run quill https://youtube.com/watch?v=... transcript.txt
+uv run quill https://example.com/audio.mp3 transcript.txt --model large
+uv run quill podcast.mp3 output.txt --device cuda --language en
 ```
 
 Options:
