@@ -13,11 +13,19 @@ A command-line tool for transcribing audio files, YouTube videos, and podcasts u
 
 ## Installation
 
-## Installation
+At system level you need [cuda 12](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#ubuntu) and [cuddn](https://docs.nvidia.com/deeplearning/cudnn/installation/latest/linux.html#ubuntu-and-debian-network-installation).
+
+```bash
+sudo apt install libcublas12
+sudo apt install cudnn9-cuda-12
+```
 
 ```bash
 # Install dependencies and create virtual environment
 uv sync
+
+# Optional: Install globally as a CLI tool
+uv tool install . --python 3.12
 ```
 
 ## Usage
