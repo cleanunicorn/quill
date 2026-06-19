@@ -1,15 +1,17 @@
 [project]
 name = "quill"
 version = "0.1.0"
-description = "A split-file transcription tool using faster-whisper"
-readme = "Readme.md"
+description = "A command-line tool for transcribing audio files, YouTube videos, and podcasts using faster-whisper"
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "faster-whisper",
     "click",
     "yt-dlp",
-    "nvidia-cudnn-cu12>=9.17.1.4",
-    "nvidia-cudnn-cu11>=9.10.2.21",
+    # NVIDIA cuDNN runtime libraries for GPU (CUDA) inference. These wheels only
+    # exist for Linux and Windows, so they are gated by platform markers — on
+    # macOS the dependency is skipped entirely and Quill runs CPU-only.
+    "nvidia-cudnn-cu12>=9.17.1.4; sys_platform == 'linux' or sys_platform == 'win32'",
 ]
 
 [project.scripts]
