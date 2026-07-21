@@ -1,4 +1,10 @@
+import io
+
+import click
+import pytest
+
 from app.cli.utils import (
+    download_file,
     is_url,
     is_youtube_url,
     sanitize_filename,
@@ -32,6 +38,23 @@ def test_sanitize_filename():
     assert sanitize_filename("What?! A/B\\C: Test") == "What ABC Test"
     assert sanitize_filename("  spaced  ") == "spaced"
     assert sanitize_filename("dash-and_underscore") == "dash-and_underscore"
+
+
+def test_download_file_streams_response_to_path(tmp_path, monkeypatch):
+    monkeypatch.setattr("urllib.request.urlopen", lambda url: io.BytesIO(b"audio-bytes"))
+    target = tmp_path / "audio"
+    result = download_file("https://example.com/a.mp3", target)
+    assert result == target
+    assert target.read_bytes() == b"audio-bytes"
+
+
+def test_download_file_wraps_errors(tmp_path, monkeypatch):
+    def failing_urlopen(url):
+        raise OSError("connection refused")
+
+    monkeypatch.setattr("urllib.request.urlopen", failing_urlopen)
+    with pytest.raises(click.ClickException, match="Failed to download file"):
+        download_file("https://example.com/a.mp3", tmp_path / "audio")
 
 
 def test_seconds_to_timestamp():
