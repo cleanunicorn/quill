@@ -86,7 +86,9 @@ def test_download_youtube_audio_wraps_errors(tmp_path, monkeypatch):
 
 
 def test_download_file_streams_response_to_path(tmp_path, monkeypatch):
-    monkeypatch.setattr("urllib.request.urlopen", lambda url: io.BytesIO(b"audio-bytes"))
+    monkeypatch.setattr(
+        "urllib.request.urlopen", lambda url, timeout=None: io.BytesIO(b"audio-bytes")
+    )
     target = tmp_path / "audio"
     result = download_file("https://example.com/a.mp3", target)
     assert result == target
@@ -94,7 +96,7 @@ def test_download_file_streams_response_to_path(tmp_path, monkeypatch):
 
 
 def test_download_file_wraps_errors(tmp_path, monkeypatch):
-    def failing_urlopen(url):
+    def failing_urlopen(url, timeout=None):
         raise OSError("connection refused")
 
     monkeypatch.setattr("urllib.request.urlopen", failing_urlopen)

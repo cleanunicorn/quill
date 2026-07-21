@@ -70,7 +70,7 @@ def download_youtube_audio(url: str, temp_dir: Path) -> tuple[Path, str]:
 def download_file(url: str, local_path: Path) -> Path:
     """Download a file from a URL to a local path."""
     try:
-        with urllib.request.urlopen(url) as response, local_path.open("wb") as f:
+        with urllib.request.urlopen(url, timeout=30) as response, local_path.open("wb") as f:
             shutil.copyfileobj(response, f)
         return local_path
     except Exception as e:
