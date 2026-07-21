@@ -17,7 +17,7 @@ from app.cli.utils import (
 )
 
 
-def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) -> tuple[str, str]:
+def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) -> tuple[Path, Path]:
     """Resolve the input source to a local audio path and an output file path.
 
     Downloads remote sources into ``temp_dir`` and derives a default output
@@ -33,14 +33,11 @@ def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) ->
             click.echo("Downloading audio file...")
             audio_path = download_file(input_source, download_target)
             default_stem = sanitize_filename(Path(urlparse(input_source).path).stem) or "transcript"
-        audio_source = str(audio_path)
     else:
-        audio_source = input_source
-        default_stem = Path(input_source).stem
+        audio_path = Path(input_source)
+        default_stem = audio_path.stem
 
-    if output_file is None:
-        output_file = f"{default_stem}.txt"
-    return audio_source, output_file
+    return audio_path, Path(output_file if output_file is not None else f"{default_stem}.txt")
 
 
 @click.command()
@@ -91,13 +88,15 @@ def transcribe(
     """
     try:
         with tempfile.TemporaryDirectory(prefix="quill-") as temp_dir:
-            audio_path, output_file = resolve_input(input_source, output_file, Path(temp_dir))
+            audio_path, output_path = resolve_input(input_source, output_file, Path(temp_dir))
 
             click.echo("Loading model...")
             whisper_model = WhisperModel(model, device=device, compute_type="auto")
 
             click.echo("Transcribing audio...")
-            segments, info = whisper_model.transcribe(audio_path, beam_size=5, language=language)
+            segments, info = whisper_model.transcribe(
+                str(audio_path), beam_size=5, language=language
+            )
 
             click.echo(f"Duration: {info.duration:.2f} seconds")
             if language is None:
@@ -106,7 +105,7 @@ def transcribe(
                     f"with probability {info.language_probability}"
                 )
 
-            with Path(output_file).open("w", encoding="utf-8") as f:
+            with output_path.open("w", encoding="utf-8") as f:
                 click.echo("\nTranscription:")
                 for segment in segments:
                     if timestamps:
@@ -119,7 +118,7 @@ def transcribe(
                         click.echo(segment.text)
                         f.write(segment.text + " ")
 
-        click.echo(f"\nTranscription saved to: {output_file}")
+        click.echo(f"\nTranscription saved to: {output_path}")
 
     except KeyboardInterrupt:
         click.echo("\nTranscription cancelled by user.")
