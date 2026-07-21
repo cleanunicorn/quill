@@ -35,6 +35,9 @@ Then install with the `cuda` extra:
 
 ```bash
 uv sync --extra cuda
+
+# Or, for a global CLI install with CUDA support:
+uv tool install '.[cuda]' --python 3.12
 ```
 
 ## Usage
