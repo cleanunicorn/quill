@@ -80,6 +80,12 @@ def test_resolve_input_direct_url_without_path_falls_back(tmp_path, monkeypatch)
     assert output_path == Path("transcript.txt")
 
 
+def test_version_flag_reports_package_version():
+    result = CliRunner().invoke(transcribe, ["--version"])
+    assert result.exit_code == 0
+    assert "0.1.0" in result.output
+
+
 def test_transcribe_writes_plain_transcript(tmp_path, monkeypatch):
     monkeypatch.setattr(commands, "WhisperModel", FakeWhisperModel)
     runner = CliRunner()
