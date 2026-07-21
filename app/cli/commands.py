@@ -40,7 +40,10 @@ def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) ->
         audio_path = Path(input_source)
         default_stem = audio_path.stem
 
-    return audio_path, Path(output_file if output_file is not None else f"{default_stem}.txt")
+    output_path = Path(output_file if output_file is not None else f"{default_stem}.txt")
+    if not output_path.name:
+        raise click.ClickException(f"Invalid output file: '{output_file}'")
+    return audio_path, output_path
 
 
 def write_transcript(segments: Iterable, f: TextIO, timestamps: bool) -> None:
