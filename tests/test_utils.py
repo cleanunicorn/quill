@@ -5,11 +5,26 @@ import pytest
 
 from app.cli.utils import (
     download_file,
+    download_youtube_audio,
     is_url,
     is_youtube_url,
     sanitize_filename,
     seconds_to_timestamp,
 )
+
+
+class FakeYoutubeDL:
+    def __init__(self, opts):
+        self.opts = opts
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def extract_info(self, url):
+        return {"title": "My Video"}
 
 
 def test_is_youtube_url_matches_common_formats():
@@ -41,6 +56,33 @@ def test_sanitize_filename():
     assert sanitize_filename("") == ""
     assert sanitize_filename("!!!") == ""
     assert sanitize_filename("😀🎉") == ""
+
+
+def test_download_youtube_audio_returns_wav_path_and_title(tmp_path, monkeypatch):
+    monkeypatch.setattr("app.cli.utils.yt_dlp.YoutubeDL", FakeYoutubeDL)
+    audio_path, title = download_youtube_audio("https://youtu.be/x", tmp_path)
+    assert audio_path == tmp_path / "audio.wav"
+    assert title == "My Video"
+
+
+def test_download_youtube_audio_missing_title_falls_back(tmp_path, monkeypatch):
+    class NoTitleYoutubeDL(FakeYoutubeDL):
+        def extract_info(self, url):
+            return {}
+
+    monkeypatch.setattr("app.cli.utils.yt_dlp.YoutubeDL", NoTitleYoutubeDL)
+    _, title = download_youtube_audio("https://youtu.be/x", tmp_path)
+    assert title == "video"
+
+
+def test_download_youtube_audio_wraps_errors(tmp_path, monkeypatch):
+    class FailingYoutubeDL(FakeYoutubeDL):
+        def extract_info(self, url):
+            raise RuntimeError("network down")
+
+    monkeypatch.setattr("app.cli.utils.yt_dlp.YoutubeDL", FailingYoutubeDL)
+    with pytest.raises(click.ClickException, match="Failed to download YouTube audio"):
+        download_youtube_audio("https://youtu.be/x", tmp_path)
 
 
 def test_download_file_streams_response_to_path(tmp_path, monkeypatch):
