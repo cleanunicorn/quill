@@ -132,6 +132,9 @@ def transcribe(
                     click.echo("\nTranscription:")
                     write_transcript(segments, f, timestamps)
                 partial_path.replace(output_path)
+            except KeyboardInterrupt:
+                click.echo(f"\nPartial transcript kept at: {partial_path}")
+                raise
             except BaseException:
                 partial_path.unlink(missing_ok=True)
                 raise
