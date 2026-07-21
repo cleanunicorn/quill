@@ -34,9 +34,9 @@ uv run quill --help
 app/
   cli/
     commands.py   # Click command + transcription pipeline
-    utils.py      # URL detection, YouTube + file downloads
-main.py           # Thin entry point
-pyproject.toml    # Project metadata and dependencies
+    utils.py      # URL detection, YouTube + file downloads, pure helpers
+tests/            # pytest suite (unit + CLI tests, no network access)
+pyproject.toml    # Project metadata, dependencies, ruff/pytest config
 ```
 
 The console entry point is defined in `pyproject.toml` under
@@ -47,10 +47,10 @@ The console entry point is defined in `pyproject.toml` under
 Quill must install and run on macOS, Linux, and Windows.
 
 - **Default installs are CPU-only and platform-independent.** Keep it that way.
-- The NVIDIA cuDNN dependency is gated with a platform marker
-  (`sys_platform == 'linux' or sys_platform == 'win32'`) because the wheels only
-  exist for Linux and Windows. **Do not add unconditional GPU/CUDA
-  dependencies** — that breaks installation on macOS.
+- The NVIDIA cuDNN dependency lives in the optional `cuda` extra and is gated
+  with a platform marker (`sys_platform == 'linux' or sys_platform == 'win32'`)
+  because the wheels only exist for Linux and Windows. **Do not add
+  unconditional GPU/CUDA dependencies** — that breaks installation on macOS.
 - If you add a dependency that ships platform-specific wheels, gate it with the
   appropriate marker and confirm `uv sync` still resolves on all three OSes.
 
@@ -63,11 +63,16 @@ uv lock
 # Confirm a clean install and that the CLI loads
 uv sync
 uv run quill --help
+
+# Lint, check formatting, and run the tests
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
 ```
 
-The [CI workflow](.github/workflows/ci.yml) runs these same checks on macOS,
-Linux, and Windows for every pull request, so any platform regression will be
-caught automatically.
+The [CI workflow](.github/workflows/ci.yml) runs the lint, format, and test
+checks for every pull request. Commit messages follow
+[Conventional Commits](https://www.conventionalcommits.org/) (`type(scope): subject`).
 
 ## Reporting issues
 

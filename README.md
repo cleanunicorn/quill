@@ -141,10 +141,11 @@ uv run quill podcast.mp3 output.txt --device cuda --language en --timestamps
 
 | Option              | Default  | Description                                                        |
 | ------------------- | -------- | ------------------------------------------------------------------ |
-| `-m`, `--model`     | `medium` | Model size: `tiny`, `base`, `small`, `medium`, `large`.            |
+| `-m`, `--model`     | `medium` | Model size or name: `tiny`, `base`, `small`, `medium`, `large`, `large-v3`, `turbo`, or any faster-whisper model identifier. |
 | `-d`, `--device`    | `auto`   | Inference device: `auto`, `cpu`, `cuda`. `auto` picks the best one.|
 | `-l`, `--language`  | auto     | Language code (e.g. `en`, `fr`, `de`). Defaults to auto-detect.    |
 | `-t`, `--timestamps`| off      | Include `[HH:mm:ss -> HH:mm:ss]` timestamps in the output.         |
+| `--version`         |          | Show the version and exit.                                         |
 
 ### Supported input sources
 
@@ -155,9 +156,19 @@ uv run quill podcast.mp3 output.txt --device cuda --language en --timestamps
 ## GPU / CUDA acceleration
 
 GPU acceleration is **optional** and available on **Linux and Windows** with an
-NVIDIA GPU. The required NVIDIA Python libraries (cuDNN) are installed
-automatically on those platforms; on macOS they are skipped, so the install
-stays lean and CPU-only.
+NVIDIA GPU. The required NVIDIA Python libraries (cuDNN) are packaged as an
+optional `cuda` extra, so the default install stays lean and CPU-only on every
+platform:
+
+```bash
+uv sync --extra cuda
+
+# Or, for a global CLI install with CUDA support:
+uv tool install '.[cuda]'
+```
+
+The extra is platform-gated, so it is skipped automatically on macOS even if
+requested.
 
 To use the GPU, you need a working NVIDIA driver plus the CUDA 12 runtime on
 your system. On Debian/Ubuntu:
@@ -193,11 +204,11 @@ a new terminal.
 its install directory to your `PATH` (the installer prints the location).
 
 **Install fails mentioning `nvidia-cudnn`** — You should not see this anymore;
-the CUDA dependency is gated to Linux and Windows. If you do, make sure you are
-on the latest version and run `uv sync` again.
+the CUDA dependency is an optional extra gated to Linux and Windows. If you do,
+make sure you are on the latest version and run `uv sync` again.
 
 **CUDA / cuDNN errors at runtime on Linux/Windows** — Ensure the system CUDA 12
-runtime and cuDNN are installed (see
+runtime and cuDNN are installed and the `cuda` extra is included (see
 [GPU / CUDA acceleration](#gpu--cuda-acceleration)), or fall back to
 `--device cpu`.
 

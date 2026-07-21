@@ -1,33 +1,89 @@
+from __future__ import annotations
+
+import os
+import tempfile
+from collections.abc import Iterable
+from pathlib import Path
+from typing import TextIO
+from urllib.parse import urlparse
+
 import click
 from faster_whisper import WhisperModel
-import os
-from app.cli.utils import is_youtube_url, download_youtube_audio, download_file, is_url
-from pathlib import Path
+
+from app.cli.utils import (
+    download_file,
+    download_youtube_audio,
+    is_url,
+    is_youtube_url,
+    sanitize_filename,
+    seconds_to_timestamp,
+)
 
 
-def sanitize_filename(filename):
-    """Sanitize a string to be used as a filename."""
-    # Replace spaces with underscores and remove/replace invalid characters
-    filename = "".join(c for c in filename if c.isalnum() or c in (" ", "-", "_"))
-    return filename.strip()
+def validate_output_path(output_path: Path, raw_value: str | None) -> Path:
+    """Reject output paths that could never be written to."""
+    if not output_path.name:
+        raise click.ClickException(f"Invalid output file: '{raw_value}'")
+    if output_path.is_dir():
+        raise click.ClickException(f"Output file is a directory: {output_path}")
+    if not output_path.parent.is_dir():
+        raise click.ClickException(f"Output directory does not exist: {output_path.parent}")
+    return output_path
 
 
-def seconds_to_timestamp(seconds):
-    """Convert seconds to HH:mm:ss format."""
-    hours = int(seconds // 3600)
-    minutes = int((seconds % 3600) // 60)
-    seconds = int(seconds % 60)
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) -> tuple[Path, Path]:
+    """Resolve the input source to a local audio path and an output file path.
+
+    Downloads remote sources into ``temp_dir`` and derives a default output
+    filename when one was not provided.
+    """
+    if is_url(input_source):
+        # An explicit output path is fully checkable before spending time on
+        # the download; derived names can only validate afterwards.
+        if output_file is not None:
+            validate_output_path(Path(output_file), output_file)
+        if is_youtube_url(input_source):
+            click.echo("Detected YouTube URL. Downloading audio...")
+            audio_path, video_title = download_youtube_audio(input_source, temp_dir)
+            default_stem = sanitize_filename(video_title) or "transcript"
+        else:
+            click.echo("Downloading audio file...")
+            audio_path = download_file(input_source, temp_dir / "audio")
+            default_stem = sanitize_filename(Path(urlparse(input_source).path).stem) or "transcript"
+    else:
+        audio_path = Path(input_source)
+        if not audio_path.is_file():
+            raise click.ClickException(f"Input file not found: {input_source}")
+        default_stem = audio_path.stem
+
+    output_path = Path(output_file if output_file is not None else f"{default_stem}.txt")
+    return audio_path, validate_output_path(output_path, output_file)
+
+
+def write_transcript(segments: Iterable, f: TextIO, timestamps: bool) -> None:
+    """Echo each transcribed segment and write it to the open transcript file."""
+    for segment in segments:
+        if timestamps:
+            start_time = seconds_to_timestamp(segment.start)
+            end_time = seconds_to_timestamp(segment.end)
+            line = f"[{start_time} -> {end_time}] {segment.text.strip()}"
+            click.echo(line)
+            f.write(line + "\n")
+        else:
+            click.echo(segment.text)
+            f.write(segment.text + " ")
 
 
 @click.command()
+@click.version_option(package_name="quill")
 @click.argument("input_source")
 @click.argument("output_file", required=False)
 @click.option(
     "--model",
     "-m",
     default="medium",
-    help="Model size to use (tiny, base, small, medium, large)",
+    help="Model size or name (e.g. tiny, base, small, medium, large, large-v3, turbo, "
+    "or any faster-whisper model identifier)",
     show_default=True,
 )
 @click.option(
@@ -51,106 +107,70 @@ def seconds_to_timestamp(seconds):
     help="Include timestamps in the transcription output",
 )
 def transcribe(
-    input_source,
-    output_file,
-    model,
-    device,
-    language,
-    timestamps,
-):
+    input_source: str,
+    output_file: str | None,
+    model: str,
+    device: str,
+    language: str | None,
+    timestamps: bool,
+) -> None:
     """
     Transcribe audio from a file or URL to text.
 
     INPUT_SOURCE: Path to local audio file or URL to audio file (including YouTube URLs)
 
-    OUTPUT_FILE: Path where the transcription will be saved
+    OUTPUT_FILE: Path where the transcription will be saved. Optional; defaults
+    to the input filename (or the video title for YouTube URLs) with a .txt
+    extension, in the current directory.
     """
-    temp_file = None
     try:
-        # Handle URL input
-        if is_url(input_source):
-            if is_youtube_url(input_source):
-                click.echo("Detected YouTube URL. Downloading audio...")
-                temp_file = "temp_audio_file"
-                input_source, video_title = download_youtube_audio(
-                    input_source, temp_file
-                )
-                if output_file is None:
-                    # Use video title for output file, sanitize it for filesystem
-                    safe_title = sanitize_filename(video_title)
-                    output_file = f"{safe_title}.txt"
-            else:
-                temp_file = "temp_audio_file"
-                input_source = download_file(input_source, temp_file)
-                if output_file is None:
-                    # Extract filename from URL
-                    output_file = Path(input_source).stem + ".txt"
+        with tempfile.TemporaryDirectory(prefix="quill-") as temp_dir:
+            audio_path, output_path = resolve_input(input_source, output_file, Path(temp_dir))
+            click.echo(f"Transcript will be saved to: {output_path}")
 
-        # If output_file is still None and it's a local file
-        if output_file is None:
-            # Use the input filename but change extension to .txt
-            output_file = Path(input_source).stem + ".txt"
+            click.echo("Loading model...")
+            whisper_model = WhisperModel(model, device=device, compute_type="auto")
 
-        # Initialize the model
-        click.echo("Loading model...")
-        whisper_model = WhisperModel(model, device=device, compute_type="auto")
-
-        # Perform transcription
-        click.echo("Transcribing audio...")
-        segments, info = whisper_model.transcribe(
-            input_source, beam_size=5, language=language
-        )
-
-        # Print duration
-        click.echo(f"Duration: {info.duration:.2f} seconds")
-
-        # Print detection info
-        if language is None:
-            click.echo(
-                f"Detected language '{info.language}' with probability {info.language_probability}"
+            click.echo("Transcribing audio...")
+            segments, info = whisper_model.transcribe(
+                str(audio_path), beam_size=5, language=language
             )
 
-        # Open the output file for writing
-        with open(output_file, "w", encoding="utf-8") as f:
-            click.echo("\nTranscription:")
-            current_group = ""
-            current_start = None
+            click.echo(f"Duration: {seconds_to_timestamp(info.duration)}")
+            if language is None:
+                click.echo(
+                    f"Detected language '{info.language}' "
+                    f"with probability {info.language_probability:.0%}"
+                )
 
-            for segment in segments:
-                if timestamps:
-                    if current_start is None:
-                        current_start = segment.start
-                    current_group += f"{segment.text} "
-                    
-                    # Output and store the current segment with HH:mm:ss format
-                    start_time = seconds_to_timestamp(current_start)
-                    end_time = seconds_to_timestamp(segment.end)
-                    segment_text = f"[{start_time} -> {end_time}] {current_group.strip()}"
-                    click.echo(segment_text)
-                    f.write(segment_text + "\n")
-                    
-                    current_group = ""
-                    current_start = None
-                else:
-                    # Output and store the current segment
-                    click.echo(segment.text)
-                    f.write(segment.text + " ")
+            # Write to a sibling .part file so a mid-transcription failure never
+            # truncates or clobbers the final output file. The PID keeps
+            # concurrent runs targeting the same output from sharing a partial.
+            partial_path = output_path.with_name(f"{output_path.name}.{os.getpid()}.part")
+            try:
+                with partial_path.open("w", encoding="utf-8") as f:
+                    click.echo("\nTranscription:")
+                    write_transcript(segments, f, timestamps)
+            except KeyboardInterrupt:
+                click.echo(f"\nPartial transcript kept at: {partial_path}")
+                raise
+            except BaseException:
+                partial_path.unlink(missing_ok=True)
+                raise
+            try:
+                partial_path.replace(output_path)
+            except OSError:
+                click.echo(f"\nTranscript kept at: {partial_path}")
+                raise
 
-        click.echo(f"\nTranscription saved to: {output_file}")
+        click.echo(f"\nTranscript saved to: {output_path}")
 
     except KeyboardInterrupt:
-        click.echo("\nTranscription cancelled by user. Cleaning up...")
-        if temp_file and os.path.exists(temp_file):
-            os.remove(temp_file)
-        raise click.Abort()
+        click.echo("\nTranscription cancelled by user.")
+        raise SystemExit(130) from None
+
+    except click.ClickException:
+        raise
 
     except Exception as e:
-        raise click.ClickException(str(e))
-
-    finally:
-        # Cleanup downloaded files
-        if temp_file:
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-            if os.path.exists(f"{temp_file}.wav"):
-                os.remove(f"{temp_file}.wav")
+        raise click.ClickException(str(e)) from e

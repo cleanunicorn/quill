@@ -3,19 +3,38 @@ name = "quill"
 version = "0.1.0"
 description = "A command-line tool for transcribing audio files, YouTube videos, and podcasts using faster-whisper"
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
+keywords = ["transcription", "whisper", "speech-to-text", "youtube"]
+classifiers = [
+    "Environment :: Console",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
 dependencies = [
-    "faster-whisper",
-    "click",
-    "yt-dlp",
-    # NVIDIA cuDNN runtime libraries for GPU (CUDA) inference. These wheels only
-    # exist for Linux and Windows, so they are gated by platform markers — on
-    # macOS the dependency is skipped entirely and Quill runs CPU-only.
+    "faster-whisper>=1.1",
+    "click>=8.1",
+    "yt-dlp>=2025.1.15",
+]
+
+[project.optional-dependencies]
+# NVIDIA cuDNN runtime libraries for GPU (CUDA) inference. The wheels only
+# exist for Linux and Windows, so the platform marker skips them on macOS,
+# where Quill runs CPU-only.
+cuda = [
     "nvidia-cudnn-cu12>=9.17.1.4; sys_platform == 'linux' or sys_platform == 'win32'",
 ]
 
 [project.scripts]
 quill = "app.cli.commands:transcribe"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.12",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -23,3 +42,13 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "PTH"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

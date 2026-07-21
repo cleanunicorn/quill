@@ -1,25 +1,55 @@
+from __future__ import annotations
+
 import re
+import shutil
 import urllib.request
-import yt_dlp
+from pathlib import Path
+
 import click
+import yt_dlp
+
+YOUTUBE_PATTERNS = [
+    re.compile(r"^https?://(?:www\.)?youtube\.com/watch\?v=[\w-]+"),
+    re.compile(r"^https?://(?:www\.)?youtube\.com/v/[\w-]+"),
+    re.compile(r"^https?://youtu\.be/[\w-]+"),
+    re.compile(r"^https?://(?:www\.)?youtube\.com/shorts/[\w-]+"),
+]
 
 
-def is_youtube_url(url):
+def is_youtube_url(url: str) -> bool:
     """Check if the URL is a YouTube URL."""
-    youtube_patterns = [
-        r"^https?://(?:www\.)?youtube\.com/watch\?v=[\w-]+",
-        r"^https?://(?:www\.)?youtube\.com/v/[\w-]+",
-        r"^https?://youtu\.be/[\w-]+",
-        r"^https?://(?:www\.)?youtube\.com/shorts/[\w-]+",
-    ]
-    return any(re.match(pattern, url) for pattern in youtube_patterns)
+    return any(pattern.match(url) for pattern in YOUTUBE_PATTERNS)
 
 
-def download_youtube_audio(url, output_path):
-    """Download audio from YouTube video."""
+def sanitize_filename(filename: str) -> str:
+    """Sanitize a string to be used as a filename."""
+    filename = "".join(c for c in filename if c.isalnum() or c in (" ", "-", "_"))
+    return filename.strip()
+
+
+def seconds_to_timestamp(seconds: float) -> str:
+    """Convert seconds to HH:mm:ss format."""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
+def is_url(string: str) -> bool:
+    """Check if a string is a URL."""
+    return string.startswith(("http://", "https://"))
+
+
+def download_youtube_audio(url: str, temp_dir: Path) -> tuple[Path, str]:
+    """Download audio from a YouTube video into ``temp_dir``.
+
+    Returns the path to the extracted audio file and the video title.
+    """
+    output_path = temp_dir / "audio"
     ydl_opts = {
         "format": "bestaudio/best",
-        "outtmpl": output_path,
+        "outtmpl": str(output_path),
+        "noplaylist": True,
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
@@ -31,27 +61,17 @@ def download_youtube_audio(url, output_path):
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # Extract video info first
-            info = ydl.extract_info(url, download=False)
-            title = info.get("title", "video")
-            # Then download
-            ydl.download([url])
-        return f"{output_path}.wav", title
+            info = ydl.extract_info(url)
+        return output_path.with_suffix(".wav"), info.get("title", "video")
     except Exception as e:
-        raise click.ClickException(f"Failed to download YouTube audio: {str(e)}")
+        raise click.ClickException(f"Failed to download YouTube audio: {e}") from e
 
 
-def download_file(url, local_filename):
-    """Download a file from a URL to a local file."""
+def download_file(url: str, local_path: Path) -> Path:
+    """Download a file from a URL to a local path."""
     try:
-        with urllib.request.urlopen(url) as response:
-            with open(local_filename, "wb") as f:
-                f.write(response.read())
-        return local_filename
+        with urllib.request.urlopen(url, timeout=30) as response, local_path.open("wb") as f:
+            shutil.copyfileobj(response, f)
+        return local_path
     except Exception as e:
-        raise click.ClickException(f"Failed to download file: {str(e)}")
-
-
-def is_url(string):
-    """Check if a string is a URL."""
-    return string.startswith(("http://", "https://"))
+        raise click.ClickException(f"Failed to download file: {e}") from e
