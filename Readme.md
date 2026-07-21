@@ -56,7 +56,7 @@ If `OUTPUT_FILE` is omitted, the transcript is saved in the current directory us
 
 Options:
 
-- `--model, -m`: Model size to use (tiny, base, small, medium, large). Default: medium
+- `--model, -m`: Model size or name (e.g. tiny, base, small, medium, large, large-v3, turbo, or any faster-whisper model identifier). Default: medium
 - `--device, -d`: Device to use for inference (auto, cpu, cuda). Default: auto
 - `--language, -l`: Language code for transcription (e.g., en, fr, de). Default: auto-detect
 - `--timestamps, -t`: Include timestamps in the transcription output

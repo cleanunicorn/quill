@@ -69,7 +69,8 @@ def write_transcript(segments: Iterable, f: TextIO, timestamps: bool) -> None:
     "--model",
     "-m",
     default="medium",
-    help="Model size to use (tiny, base, small, medium, large)",
+    help="Model size or name (e.g. tiny, base, small, medium, large, large-v3, turbo, "
+    "or any faster-whisper model identifier)",
     show_default=True,
 )
 @click.option(
