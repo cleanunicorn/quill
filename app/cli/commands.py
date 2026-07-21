@@ -100,7 +100,9 @@ def transcribe(
 
     INPUT_SOURCE: Path to local audio file or URL to audio file (including YouTube URLs)
 
-    OUTPUT_FILE: Path where the transcription will be saved
+    OUTPUT_FILE: Path where the transcription will be saved. Optional; defaults
+    to the input filename (or the video title for YouTube URLs) with a .txt
+    extension, in the current directory.
     """
     try:
         with tempfile.TemporaryDirectory(prefix="quill-") as temp_dir:
