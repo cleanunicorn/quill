@@ -105,6 +105,7 @@ def transcribe(
     try:
         with tempfile.TemporaryDirectory(prefix="quill-") as temp_dir:
             audio_path, output_path = resolve_input(input_source, output_file, Path(temp_dir))
+            click.echo(f"Transcript will be saved to: {output_path}")
 
             click.echo("Loading model...")
             whisper_model = WhisperModel(model, device=device, compute_type="auto")
