@@ -49,6 +49,7 @@ def download_youtube_audio(url: str, temp_dir: Path) -> tuple[Path, str]:
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": str(output_path),
+        "noplaylist": True,
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
