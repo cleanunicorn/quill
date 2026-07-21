@@ -123,6 +123,30 @@ def test_transcribe_failure_keeps_previous_output_and_cleans_partial(tmp_path, m
         assert not list(Path().glob("*.part"))
 
 
+class InterruptedWhisperModel(FakeWhisperModel):
+    def transcribe(self, audio, beam_size, language):
+        def segment_gen():
+            yield SimpleNamespace(start=0.0, end=2.5, text=" hello")
+            raise KeyboardInterrupt
+
+        info = SimpleNamespace(duration=5.0, language="en", language_probability=0.9)
+        return segment_gen(), info
+
+
+def test_transcribe_ctrl_c_exits_130_and_keeps_partial(tmp_path, monkeypatch):
+    monkeypatch.setattr(commands, "WhisperModel", InterruptedWhisperModel)
+    runner = CliRunner()
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        Path("audio.mp3").touch()
+        result = runner.invoke(transcribe, ["audio.mp3", "out.txt"])
+        assert result.exit_code == 130
+        assert "cancelled" in result.output
+        assert not Path("out.txt").exists()
+        partials = list(Path().glob("out.txt.*.part"))
+        assert len(partials) == 1
+        assert partials[0].read_text(encoding="utf-8") == " hello "
+
+
 def test_transcribe_writes_plain_transcript(tmp_path, monkeypatch):
     monkeypatch.setattr(commands, "WhisperModel", FakeWhisperModel)
     runner = CliRunner()
