@@ -725,7 +725,7 @@ dependencies = [
 
 [package.optional-dependencies]
 cuda = [
-    { name = "nvidia-cudnn-cu12" },
+    { name = "nvidia-cudnn-cu12", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [package.dev-dependencies]
@@ -738,7 +738,7 @@ dev = [
 requires-dist = [
     { name = "click", specifier = ">=8.1" },
     { name = "faster-whisper", specifier = ">=1.1" },
-    { name = "nvidia-cudnn-cu12", marker = "extra == 'cuda'", specifier = ">=9.17.1.4" },
+    { name = "nvidia-cudnn-cu12", marker = "(sys_platform == 'linux' and extra == 'cuda') or (sys_platform == 'win32' and extra == 'cuda')", specifier = ">=9.17.1.4" },
     { name = "yt-dlp", specifier = ">=2025.1.15" },
 ]
 provides-extras = ["cuda"]
