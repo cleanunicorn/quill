@@ -110,6 +110,16 @@ def test_resolve_input_direct_url_without_path_falls_back(tmp_path, monkeypatch)
     assert output_path == Path("transcript.txt")
 
 
+def test_transcribe_direct_url_end_to_end(tmp_path, monkeypatch):
+    monkeypatch.setattr(commands, "WhisperModel", FakeWhisperModel)
+    monkeypatch.setattr(commands, "download_file", lambda url, target: target.touch() or target)
+    runner = CliRunner()
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        result = runner.invoke(transcribe, ["https://example.com/talk.mp3"])
+        assert result.exit_code == 0
+        assert Path("talk.txt").read_text(encoding="utf-8") == " hello  world "
+
+
 def test_transcribe_rejects_empty_output_name(tmp_path):
     runner = CliRunner()
     with runner.isolated_filesystem(temp_dir=tmp_path):
