@@ -59,10 +59,8 @@ def download_youtube_audio(url: str, output_path: Path) -> tuple[Path, str]:
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            title = info.get("title", "video")
-            ydl.download([url])
-        return output_path.with_suffix(".wav"), title
+            info = ydl.extract_info(url)
+        return output_path.with_suffix(".wav"), info.get("title", "video")
     except Exception as e:
         raise click.ClickException(f"Failed to download YouTube audio: {e}") from e
 
