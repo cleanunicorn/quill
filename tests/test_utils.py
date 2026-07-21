@@ -38,6 +38,9 @@ def test_sanitize_filename():
     assert sanitize_filename("What?! A/B\\C: Test") == "What ABC Test"
     assert sanitize_filename("  spaced  ") == "spaced"
     assert sanitize_filename("dash-and_underscore") == "dash-and_underscore"
+    assert sanitize_filename("") == ""
+    assert sanitize_filename("!!!") == ""
+    assert sanitize_filename("😀🎉") == ""
 
 
 def test_download_file_streams_response_to_path(tmp_path, monkeypatch):
