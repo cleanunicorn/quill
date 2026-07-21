@@ -115,11 +115,11 @@ def transcribe(
                 str(audio_path), beam_size=5, language=language
             )
 
-            click.echo(f"Duration: {info.duration:.2f} seconds")
+            click.echo(f"Duration: {seconds_to_timestamp(info.duration)}")
             if language is None:
                 click.echo(
                     f"Detected language '{info.language}' "
-                    f"with probability {info.language_probability}"
+                    f"with probability {info.language_probability:.0%}"
                 )
 
             # Write to a sibling .part file so a mid-transcription failure never
