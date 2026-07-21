@@ -145,7 +145,7 @@ def transcribe(
                 partial_path.unlink(missing_ok=True)
                 raise
 
-        click.echo(f"\nTranscription saved to: {output_path}")
+        click.echo(f"\nTranscript saved to: {output_path}")
 
     except KeyboardInterrupt:
         click.echo("\nTranscription cancelled by user.")
