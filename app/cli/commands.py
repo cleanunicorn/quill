@@ -27,14 +27,13 @@ def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) ->
     filename when one was not provided.
     """
     if is_url(input_source):
-        download_target = temp_dir / "audio"
         if is_youtube_url(input_source):
             click.echo("Detected YouTube URL. Downloading audio...")
-            audio_path, video_title = download_youtube_audio(input_source, download_target)
+            audio_path, video_title = download_youtube_audio(input_source, temp_dir)
             default_stem = sanitize_filename(video_title) or "transcript"
         else:
             click.echo("Downloading audio file...")
-            audio_path = download_file(input_source, download_target)
+            audio_path = download_file(input_source, temp_dir / "audio")
             default_stem = sanitize_filename(Path(urlparse(input_source).path).stem) or "transcript"
     else:
         audio_path = Path(input_source)

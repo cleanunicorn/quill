@@ -40,11 +40,12 @@ def is_url(string: str) -> bool:
     return string.startswith(("http://", "https://"))
 
 
-def download_youtube_audio(url: str, output_path: Path) -> tuple[Path, str]:
-    """Download audio from a YouTube video.
+def download_youtube_audio(url: str, temp_dir: Path) -> tuple[Path, str]:
+    """Download audio from a YouTube video into ``temp_dir``.
 
     Returns the path to the extracted audio file and the video title.
     """
+    output_path = temp_dir / "audio"
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": str(output_path),

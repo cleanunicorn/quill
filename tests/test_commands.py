@@ -54,8 +54,8 @@ def test_resolve_input_missing_local_file_fails_fast(tmp_path):
 
 
 def test_resolve_input_youtube_uses_sanitized_title(tmp_path, monkeypatch):
-    def fake_download(url, target):
-        return target.with_suffix(".wav"), "My: Video/Title"
+    def fake_download(url, temp_dir):
+        return temp_dir / "audio.wav", "My: Video/Title"
 
     monkeypatch.setattr(commands, "download_youtube_audio", fake_download)
     audio_path, output_path = resolve_input("https://youtu.be/dQw4w9WgXcQ", None, tmp_path)
@@ -65,7 +65,7 @@ def test_resolve_input_youtube_uses_sanitized_title(tmp_path, monkeypatch):
 
 def test_resolve_input_youtube_empty_title_falls_back(tmp_path, monkeypatch):
     monkeypatch.setattr(
-        commands, "download_youtube_audio", lambda url, target: (target.with_suffix(".wav"), "!!!")
+        commands, "download_youtube_audio", lambda url, temp_dir: (temp_dir / "audio.wav", "!!!")
     )
     _, output_path = resolve_input("https://youtu.be/dQw4w9WgXcQ", None, tmp_path)
     assert output_path == Path("transcript.txt")
@@ -75,7 +75,7 @@ def test_resolve_input_youtube_keeps_explicit_output(tmp_path, monkeypatch):
     monkeypatch.setattr(
         commands,
         "download_youtube_audio",
-        lambda url, target: (target.with_suffix(".wav"), "Title"),
+        lambda url, temp_dir: (temp_dir / "audio.wav", "Title"),
     )
     _, output_path = resolve_input("https://youtu.be/dQw4w9WgXcQ", "given.txt", tmp_path)
     assert output_path == Path("given.txt")
