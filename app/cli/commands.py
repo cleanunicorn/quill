@@ -7,21 +7,14 @@ from urllib.parse import urlparse
 import click
 from faster_whisper import WhisperModel
 
-from app.cli.utils import download_file, download_youtube_audio, is_url, is_youtube_url
-
-
-def sanitize_filename(filename: str) -> str:
-    """Sanitize a string to be used as a filename."""
-    filename = "".join(c for c in filename if c.isalnum() or c in (" ", "-", "_"))
-    return filename.strip()
-
-
-def seconds_to_timestamp(seconds: float) -> str:
-    """Convert seconds to HH:mm:ss format."""
-    hours = int(seconds // 3600)
-    minutes = int((seconds % 3600) // 60)
-    secs = int(seconds % 60)
-    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+from app.cli.utils import (
+    download_file,
+    download_youtube_audio,
+    is_url,
+    is_youtube_url,
+    sanitize_filename,
+    seconds_to_timestamp,
+)
 
 
 def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) -> tuple[str, str]:

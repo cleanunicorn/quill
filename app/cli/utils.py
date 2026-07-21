@@ -21,6 +21,20 @@ def is_youtube_url(url: str) -> bool:
     return any(pattern.match(url) for pattern in YOUTUBE_PATTERNS)
 
 
+def sanitize_filename(filename: str) -> str:
+    """Sanitize a string to be used as a filename."""
+    filename = "".join(c for c in filename if c.isalnum() or c in (" ", "-", "_"))
+    return filename.strip()
+
+
+def seconds_to_timestamp(seconds: float) -> str:
+    """Convert seconds to HH:mm:ss format."""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
 def is_url(string: str) -> bool:
     """Check if a string is a URL."""
     return string.startswith(("http://", "https://"))

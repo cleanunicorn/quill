@@ -1,5 +1,9 @@
-from app.cli.commands import sanitize_filename, seconds_to_timestamp
-from app.cli.utils import is_url, is_youtube_url
+from app.cli.utils import (
+    is_url,
+    is_youtube_url,
+    sanitize_filename,
+    seconds_to_timestamp,
+)
 
 
 def test_is_youtube_url_matches_common_formats():
