@@ -53,6 +53,22 @@ def test_resolve_input_missing_local_file_fails_fast(tmp_path):
         resolve_input(str(tmp_path / "nope.mp3"), None, tmp_path)
 
 
+def test_resolve_input_rejects_directory_output(tmp_path):
+    source = tmp_path / "audio.mp3"
+    source.touch()
+    target_dir = tmp_path / "existing_dir"
+    target_dir.mkdir()
+    with pytest.raises(click.ClickException, match="is a directory"):
+        resolve_input(str(source), str(target_dir), tmp_path)
+
+
+def test_resolve_input_rejects_missing_output_directory(tmp_path):
+    source = tmp_path / "audio.mp3"
+    source.touch()
+    with pytest.raises(click.ClickException, match="does not exist"):
+        resolve_input(str(source), str(tmp_path / "no_such_dir" / "out.txt"), tmp_path)
+
+
 def test_resolve_input_youtube_uses_sanitized_title(tmp_path, monkeypatch):
     def fake_download(url, temp_dir):
         return temp_dir / "audio.wav", "My: Video/Title"

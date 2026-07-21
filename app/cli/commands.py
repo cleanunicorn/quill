@@ -44,6 +44,10 @@ def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) ->
     output_path = Path(output_file if output_file is not None else f"{default_stem}.txt")
     if not output_path.name:
         raise click.ClickException(f"Invalid output file: '{output_file}'")
+    if output_path.is_dir():
+        raise click.ClickException(f"Output file is a directory: {output_path}")
+    if not output_path.parent.is_dir():
+        raise click.ClickException(f"Output directory does not exist: {output_path.parent}")
     return audio_path, output_path
 
 
@@ -138,12 +142,16 @@ def transcribe(
                 with partial_path.open("w", encoding="utf-8") as f:
                     click.echo("\nTranscription:")
                     write_transcript(segments, f, timestamps)
-                partial_path.replace(output_path)
             except KeyboardInterrupt:
                 click.echo(f"\nPartial transcript kept at: {partial_path}")
                 raise
             except BaseException:
                 partial_path.unlink(missing_ok=True)
+                raise
+            try:
+                partial_path.replace(output_path)
+            except OSError:
+                click.echo(f"\nTranscript kept at: {partial_path}")
                 raise
 
         click.echo(f"\nTranscript saved to: {output_path}")
