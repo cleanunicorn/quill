@@ -20,6 +20,17 @@ from app.cli.utils import (
 )
 
 
+def validate_output_path(output_path: Path, raw_value: str | None) -> Path:
+    """Reject output paths that could never be written to."""
+    if not output_path.name:
+        raise click.ClickException(f"Invalid output file: '{raw_value}'")
+    if output_path.is_dir():
+        raise click.ClickException(f"Output file is a directory: {output_path}")
+    if not output_path.parent.is_dir():
+        raise click.ClickException(f"Output directory does not exist: {output_path.parent}")
+    return output_path
+
+
 def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) -> tuple[Path, Path]:
     """Resolve the input source to a local audio path and an output file path.
 
@@ -27,6 +38,10 @@ def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) ->
     filename when one was not provided.
     """
     if is_url(input_source):
+        # An explicit output path is fully checkable before spending time on
+        # the download; derived names can only validate afterwards.
+        if output_file is not None:
+            validate_output_path(Path(output_file), output_file)
         if is_youtube_url(input_source):
             click.echo("Detected YouTube URL. Downloading audio...")
             audio_path, video_title = download_youtube_audio(input_source, temp_dir)
@@ -42,13 +57,7 @@ def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) ->
         default_stem = audio_path.stem
 
     output_path = Path(output_file if output_file is not None else f"{default_stem}.txt")
-    if not output_path.name:
-        raise click.ClickException(f"Invalid output file: '{output_file}'")
-    if output_path.is_dir():
-        raise click.ClickException(f"Output file is a directory: {output_path}")
-    if not output_path.parent.is_dir():
-        raise click.ClickException(f"Output directory does not exist: {output_path.parent}")
-    return audio_path, output_path
+    return audio_path, validate_output_path(output_path, output_file)
 
 
 def write_transcript(segments: Iterable, f: TextIO, timestamps: bool) -> None:
