@@ -110,6 +110,15 @@ def test_resolve_input_direct_url_without_path_falls_back(tmp_path, monkeypatch)
     assert output_path == Path("transcript.txt")
 
 
+def test_transcribe_rejects_empty_output_name(tmp_path):
+    runner = CliRunner()
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        Path("audio.mp3").touch()
+        result = runner.invoke(transcribe, ["audio.mp3", ""])
+        assert result.exit_code == 1
+        assert "Invalid output file" in result.output
+
+
 def test_version_flag_reports_package_version():
     result = CliRunner().invoke(transcribe, ["--version"])
     assert result.exit_code == 0
