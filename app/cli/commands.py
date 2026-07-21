@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
+from typing import TextIO
 from urllib.parse import urlparse
 
 import click
@@ -38,6 +40,20 @@ def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) ->
         default_stem = audio_path.stem
 
     return audio_path, Path(output_file if output_file is not None else f"{default_stem}.txt")
+
+
+def write_transcript(segments: Iterable, f: TextIO, timestamps: bool) -> None:
+    """Echo each transcribed segment and write it to the open transcript file."""
+    for segment in segments:
+        if timestamps:
+            start_time = seconds_to_timestamp(segment.start)
+            end_time = seconds_to_timestamp(segment.end)
+            line = f"[{start_time} -> {end_time}] {segment.text.strip()}"
+            click.echo(line)
+            f.write(line + "\n")
+        else:
+            click.echo(segment.text)
+            f.write(segment.text + " ")
 
 
 @click.command()
@@ -107,16 +123,7 @@ def transcribe(
 
             with output_path.open("w", encoding="utf-8") as f:
                 click.echo("\nTranscription:")
-                for segment in segments:
-                    if timestamps:
-                        start_time = seconds_to_timestamp(segment.start)
-                        end_time = seconds_to_timestamp(segment.end)
-                        line = f"[{start_time} -> {end_time}] {segment.text.strip()}"
-                        click.echo(line)
-                        f.write(line + "\n")
-                    else:
-                        click.echo(segment.text)
-                        f.write(segment.text + " ")
+                write_transcript(segments, f, timestamps)
 
         click.echo(f"\nTranscription saved to: {output_path}")
 
