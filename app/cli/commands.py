@@ -121,9 +121,17 @@ def transcribe(
                     f"with probability {info.language_probability}"
                 )
 
-            with output_path.open("w", encoding="utf-8") as f:
-                click.echo("\nTranscription:")
-                write_transcript(segments, f, timestamps)
+            # Write to a sibling .part file so a mid-transcription failure never
+            # truncates or clobbers the final output file.
+            partial_path = output_path.with_name(output_path.name + ".part")
+            try:
+                with partial_path.open("w", encoding="utf-8") as f:
+                    click.echo("\nTranscription:")
+                    write_transcript(segments, f, timestamps)
+                partial_path.replace(output_path)
+            except BaseException:
+                partial_path.unlink(missing_ok=True)
+                raise
 
         click.echo(f"\nTranscription saved to: {output_path}")
 
