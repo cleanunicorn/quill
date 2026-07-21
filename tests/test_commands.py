@@ -170,6 +170,7 @@ def test_transcribe_ctrl_c_exits_130_and_keeps_partial(tmp_path, monkeypatch):
         partials = list(Path().glob("out.txt.*.part"))
         assert len(partials) == 1
         assert partials[0].read_text(encoding="utf-8") == " hello "
+        assert f"Partial transcript kept at: {partials[0]}" in result.output
 
 
 def test_transcribe_writes_plain_transcript(tmp_path, monkeypatch):
