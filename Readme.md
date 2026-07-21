@@ -54,6 +54,8 @@ uv run quill podcast.mp3 output.txt --device cuda --language en
 
 If `OUTPUT_FILE` is omitted, the transcript is saved in the current directory using the input filename (or the video title for YouTube URLs) with a `.txt` extension.
 
+If quill was installed globally with `uv tool install`, invoke `quill` directly instead of `uv run quill`.
+
 Options:
 
 - `--model, -m`: Model size or name (e.g. tiny, base, small, medium, large, large-v3, turbo, or any faster-whisper model identifier). Default: medium
