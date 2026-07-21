@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import tempfile
 from collections.abc import Iterable
 from pathlib import Path
@@ -125,8 +126,9 @@ def transcribe(
                 )
 
             # Write to a sibling .part file so a mid-transcription failure never
-            # truncates or clobbers the final output file.
-            partial_path = output_path.with_name(output_path.name + ".part")
+            # truncates or clobbers the final output file. The PID keeps
+            # concurrent runs targeting the same output from sharing a partial.
+            partial_path = output_path.with_name(f"{output_path.name}.{os.getpid()}.part")
             try:
                 with partial_path.open("w", encoding="utf-8") as f:
                     click.echo("\nTranscription:")

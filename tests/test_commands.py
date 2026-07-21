@@ -94,7 +94,7 @@ def test_transcribe_writes_plain_transcript(tmp_path, monkeypatch):
         result = runner.invoke(transcribe, ["audio.mp3"])
         assert result.exit_code == 0
         assert Path("audio.txt").read_text(encoding="utf-8") == " hello  world "
-        assert not Path("audio.txt.part").exists()
+        assert not list(Path().glob("*.part"))
 
 
 def test_transcribe_writes_timestamped_transcript(tmp_path, monkeypatch):
