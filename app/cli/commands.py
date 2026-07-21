@@ -31,7 +31,7 @@ def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) ->
                 output_file = f"{sanitize_filename(video_title)}.txt"
         else:
             click.echo("Downloading audio file...")
-            url_stem = Path(urlparse(input_source).path).stem or "transcript"
+            url_stem = sanitize_filename(Path(urlparse(input_source).path).stem) or "transcript"
             audio_path = download_file(input_source, temp_dir / "audio")
             if output_file is None:
                 output_file = f"{url_stem}.txt"
