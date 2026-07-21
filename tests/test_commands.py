@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import app.cli.commands as commands
 from app.cli.commands import resolve_input
 
 
@@ -18,3 +19,44 @@ def test_resolve_input_local_file_strips_directory_from_default(tmp_path):
 def test_resolve_input_local_file_keeps_explicit_output(tmp_path):
     _, output_path = resolve_input("audio.mp3", "custom.txt", tmp_path)
     assert output_path == Path("custom.txt")
+
+
+def test_resolve_input_youtube_uses_sanitized_title(tmp_path, monkeypatch):
+    def fake_download(url, target):
+        return target.with_suffix(".wav"), "My: Video/Title"
+
+    monkeypatch.setattr(commands, "download_youtube_audio", fake_download)
+    audio_path, output_path = resolve_input("https://youtu.be/dQw4w9WgXcQ", None, tmp_path)
+    assert audio_path == tmp_path / "audio.wav"
+    assert output_path == Path("My VideoTitle.txt")
+
+
+def test_resolve_input_youtube_empty_title_falls_back(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        commands, "download_youtube_audio", lambda url, target: (target.with_suffix(".wav"), "!!!")
+    )
+    _, output_path = resolve_input("https://youtu.be/dQw4w9WgXcQ", None, tmp_path)
+    assert output_path == Path("transcript.txt")
+
+
+def test_resolve_input_youtube_keeps_explicit_output(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        commands,
+        "download_youtube_audio",
+        lambda url, target: (target.with_suffix(".wav"), "Title"),
+    )
+    _, output_path = resolve_input("https://youtu.be/dQw4w9WgXcQ", "given.txt", tmp_path)
+    assert output_path == Path("given.txt")
+
+
+def test_resolve_input_direct_url_uses_url_stem(tmp_path, monkeypatch):
+    monkeypatch.setattr(commands, "download_file", lambda url, target: target)
+    audio_path, output_path = resolve_input("https://example.com/audio.mp3?token=x", None, tmp_path)
+    assert audio_path == tmp_path / "audio"
+    assert output_path == Path("audio.txt")
+
+
+def test_resolve_input_direct_url_without_path_falls_back(tmp_path, monkeypatch):
+    monkeypatch.setattr(commands, "download_file", lambda url, target: target)
+    _, output_path = resolve_input("https://example.com/", None, tmp_path)
+    assert output_path == Path("transcript.txt")
