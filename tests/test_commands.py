@@ -69,6 +69,17 @@ def test_resolve_input_rejects_missing_output_directory(tmp_path):
         resolve_input(str(source), str(tmp_path / "no_such_dir" / "out.txt"), tmp_path)
 
 
+def test_resolve_input_rejects_bad_explicit_output_before_download(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        commands, "download_file", lambda url, target: pytest.fail("should not download")
+    )
+    monkeypatch.setattr(
+        commands, "download_youtube_audio", lambda url, temp_dir: pytest.fail("should not download")
+    )
+    with pytest.raises(click.ClickException, match="does not exist"):
+        resolve_input("https://example.com/a.mp3", str(tmp_path / "missing" / "out.txt"), tmp_path)
+
+
 def test_resolve_input_youtube_uses_sanitized_title(tmp_path, monkeypatch):
     def fake_download(url, temp_dir):
         return temp_dir / "audio.wav", "My: Video/Title"
