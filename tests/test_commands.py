@@ -100,6 +100,29 @@ def test_version_flag_reports_package_version():
     assert "0.1.0" in result.output
 
 
+class FailingWhisperModel(FakeWhisperModel):
+    def transcribe(self, audio, beam_size, language):
+        def segment_gen():
+            yield SimpleNamespace(start=0.0, end=2.5, text=" hello")
+            raise RuntimeError("decode failed")
+
+        info = SimpleNamespace(duration=5.0, language="en", language_probability=0.9)
+        return segment_gen(), info
+
+
+def test_transcribe_failure_keeps_previous_output_and_cleans_partial(tmp_path, monkeypatch):
+    monkeypatch.setattr(commands, "WhisperModel", FailingWhisperModel)
+    runner = CliRunner()
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        Path("audio.mp3").touch()
+        Path("out.txt").write_text("old content", encoding="utf-8")
+        result = runner.invoke(transcribe, ["audio.mp3", "out.txt"])
+        assert result.exit_code == 1
+        assert "Error: decode failed" in result.output
+        assert Path("out.txt").read_text(encoding="utf-8") == "old content"
+        assert not list(Path().glob("*.part"))
+
+
 def test_transcribe_writes_plain_transcript(tmp_path, monkeypatch):
     monkeypatch.setattr(commands, "WhisperModel", FakeWhisperModel)
     runner = CliRunner()
