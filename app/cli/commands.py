@@ -38,6 +38,8 @@ def resolve_input(input_source: str, output_file: str | None, temp_dir: Path) ->
             default_stem = sanitize_filename(Path(urlparse(input_source).path).stem) or "transcript"
     else:
         audio_path = Path(input_source)
+        if not audio_path.is_file():
+            raise click.ClickException(f"Input file not found: {input_source}")
         default_stem = audio_path.stem
 
     output_path = Path(output_file if output_file is not None else f"{default_stem}.txt")

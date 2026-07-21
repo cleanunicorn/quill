@@ -1,6 +1,8 @@
 from pathlib import Path
 from types import SimpleNamespace
 
+import click
+import pytest
 from click.testing import CliRunner
 
 import app.cli.commands as commands
@@ -23,20 +25,32 @@ class FakeWhisperModel:
 
 
 def test_resolve_input_local_file_defaults_output(tmp_path):
-    audio_path, output_path = resolve_input("podcast.mp3", None, tmp_path)
-    assert audio_path == Path("podcast.mp3")
+    source = tmp_path / "podcast.mp3"
+    source.touch()
+    audio_path, output_path = resolve_input(str(source), None, tmp_path)
+    assert audio_path == source
     assert output_path == Path("podcast.txt")
 
 
 def test_resolve_input_local_file_strips_directory_from_default(tmp_path):
-    audio_path, output_path = resolve_input("/some/dir/audio.mp3", None, tmp_path)
-    assert audio_path == Path("/some/dir/audio.mp3")
+    source = tmp_path / "some" / "dir" / "audio.mp3"
+    source.parent.mkdir(parents=True)
+    source.touch()
+    audio_path, output_path = resolve_input(str(source), None, tmp_path)
+    assert audio_path == source
     assert output_path == Path("audio.txt")
 
 
 def test_resolve_input_local_file_keeps_explicit_output(tmp_path):
-    _, output_path = resolve_input("audio.mp3", "custom.txt", tmp_path)
+    source = tmp_path / "audio.mp3"
+    source.touch()
+    _, output_path = resolve_input(str(source), "custom.txt", tmp_path)
     assert output_path == Path("custom.txt")
+
+
+def test_resolve_input_missing_local_file_fails_fast(tmp_path):
+    with pytest.raises(click.ClickException, match="Input file not found"):
+        resolve_input(str(tmp_path / "nope.mp3"), None, tmp_path)
 
 
 def test_resolve_input_youtube_uses_sanitized_title(tmp_path, monkeypatch):
