@@ -138,7 +138,7 @@ def transcribe(
 
     except KeyboardInterrupt:
         click.echo("\nTranscription cancelled by user.")
-        raise click.Abort() from None
+        raise SystemExit(130) from None
 
     except click.ClickException:
         raise
