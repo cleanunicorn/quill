@@ -6,3 +6,229 @@ the Conventional Commits that land on `master`. Do not edit below the marker by
 hand — write a good PR title instead (see [AGENTS.md](AGENTS.md#pr-titles)).
 
 <!-- version list -->
+
+## v0.1.0 (2026-10-13)
+
+### Bug Fixes
+
+- Make Quill install cleanly on macOS + rehaul onboarding
+  ([`8fa123b`](https://github.com/cleanunicorn/quill/commit/8fa123b4c83471c1cc321a682c29de55faf4675c))
+
+The NVIDIA cuDNN/cuBLAS dependencies were listed unconditionally, but their wheels only exist for
+  Linux and Windows. This made `uv sync` fail on macOS with "doesn't have a source distribution or
+  wheel for the current platform", so the project could not be installed on Mac at all.
+
+Changes: - Gate nvidia-cudnn-cu12 behind a platform marker (Linux/Windows only) so macOS resolves to
+  a clean, CPU-only install. - Drop the redundant nvidia-cudnn-cu11 dependency (cu11 and cu12 are
+  mutually exclusive; faster-whisper/CTranslate2 uses CUDA 12 + cuDNN 9). - Fix project metadata:
+  correct description and readme filename casing. - Rewrite the README with per-OS onboarding
+  (macOS/Linux/Windows), ffmpeg setup, a quickstart, an optional GPU/CUDA section, and a
+  troubleshooting guide. - Add CONTRIBUTING.md with a cross-platform dev setup guide.
+
+Verified locally on macOS (Apple Silicon): `uv sync` succeeds and a real CPU transcription completes
+  end to end.
+
+Note: a GitHub Actions CI matrix (macOS/Linux/Windows install + smoke test) is prepared and will be
+  added in a follow-up that has the `workflow` token scope.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+
+- **cli**: Add a socket timeout so stalled downloads fail instead of hanging
+  ([`2b1034f`](https://github.com/cleanunicorn/quill/commit/2b1034f3a9272e125fa348296b1696f2d656e321))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Download only the video for playlist-carrying YouTube URLs
+  ([`6951ca7`](https://github.com/cleanunicorn/quill/commit/6951ca728eaca621277694694143d8616e52eb0e))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Drop duplicate abort message on Ctrl-C
+  ([`3f8e3ef`](https://github.com/cleanunicorn/quill/commit/3f8e3ef8cc5e76405d393682efd3967e7bc1ea84))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Fall back to 'transcript' when a YouTube title sanitizes to empty
+  ([`777dd5f`](https://github.com/cleanunicorn/quill/commit/777dd5fab132ffc765b888bed81e372a898f4955))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Keep the partial transcript when the user cancels with Ctrl-C
+  ([`4c466cf`](https://github.com/cleanunicorn/quill/commit/4c466cfa79f4fc41e6ee8e7c0346e27fa50240da))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Make the partial-transcript filename unique per process
+  ([`2740b9f`](https://github.com/cleanunicorn/quill/commit/2740b9f30dd53b3b36c159374f90cc3b462c0e51))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Never discard a completed transcript on rename failure
+  ([`d364816`](https://github.com/cleanunicorn/quill/commit/d36481631f9c53ac1bc96d1bcace3d8e7c30b90f))
+
+Validate the output path up front (existing directory, missing parent) and keep the finished .part
+  file with a message if the final rename still fails, instead of unlinking completed work.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Reject empty output filenames before loading the model
+  ([`0335282`](https://github.com/cleanunicorn/quill/commit/033528206bdbbcd187a3d22dfcdcd8bb67971494))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Sanitize URL-derived output filename stem
+  ([`e846243`](https://github.com/cleanunicorn/quill/commit/e846243af82f7fdc09f88cfeb92dd3026b9de64b))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Use consistent wording for the saved-transcript messages
+  ([`0b2c4e3`](https://github.com/cleanunicorn/quill/commit/0b2c4e30edb4c45e8ef762c739a0013d94f335c2))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Write transcript atomically via a .part file
+  ([`50c5897`](https://github.com/cleanunicorn/quill/commit/50c5897a306d0dccc095077f3483a67951521177))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **deps**: Cap PyAV below 19 and upgrade all dependencies
+  ([`d774e57`](https://github.com/cleanunicorn/quill/commit/d774e574c0b06a1042fa0e2aba755a3d4312a770))
+
+faster-whisper 1.2.1 (latest) calls av.open(..., metadata_errors=...), which PyAV 19 removed, so
+  every transcription failed with "open() got an unexpected keyword argument 'metadata_errors'".
+  Installs that ignore uv.lock (uv tool install ., make install) already resolve av 19 today. Cap
+  av<19 as a direct dependency so every install path gets a working version.
+
+Also raise the yt-dlp floor to 2026.8.19, since YouTube breaks older releases, and refresh the
+  lockfile to the latest compatible versions.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Documentation
+
+- Re-record demo gif with current CLI output
+  ([`a49aa6f`](https://github.com/cleanunicorn/quill/commit/a49aa6f70697232432d8d6f8892e0c02cedf2d28))
+
+Recorded a real run (espeak-ng-generated audio, small model) via asciinema + agg, showing the
+  current output: destination echo, HH:mm:ss duration, percentage language probability, and
+  timestamped transcript lines.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- Update docs regarding global installation and cuda support
+  ([`55a3544`](https://github.com/cleanunicorn/quill/commit/55a35443f4cbe78188545fa9e601b06b63dfe681))
+
+- **cli**: Clarify --model accepts any faster-whisper model name
+  ([`1927b2e`](https://github.com/cleanunicorn/quill/commit/1927b2e0dab7a26bd5d6e4383b44235bf874e1aa))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Document optional OUTPUT_FILE default in --help
+  ([`c6cc2a9`](https://github.com/cleanunicorn/quill/commit/c6cc2a9b72e16da90dfc860f3651884e4f6953c2))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **readme**: Add demo and logo
+  ([`cf4623f`](https://github.com/cleanunicorn/quill/commit/cf4623fa7563f05b1ec16a23d6d7589e52699dc6))
+
+- **readme**: Add logo and license
+  ([`db5a956`](https://github.com/cleanunicorn/quill/commit/db5a9562eef63ed5f2760483034c9f92ca1a7167))
+
+- Add options: language, device
+
+- **readme**: Note direct quill invocation for global installs
+  ([`6e56f35`](https://github.com/cleanunicorn/quill/commit/6e56f3597d67507e5e9681164ff0a85b4d53ade4))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **readme**: Show global-install command for the cuda extra
+  ([`5a17d6d`](https://github.com/cleanunicorn/quill/commit/5a17d6d31c5c57cfb7b67a64aed31f0b6d3b1e95))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **timestamps**: Add information about timestamps to the README
+  ([`d0f76d7`](https://github.com/cleanunicorn/quill/commit/d0f76d7ee7e515d389048f1db2607a42f16a874e))
+
+### Features
+
+- Allow ctrl+c to cancel transcription and cleanup temp files
+  ([`fa92847`](https://github.com/cleanunicorn/quill/commit/fa92847fab46318f6348c1092b73613c38bf71b7))
+
+- Initialize project structure and CLI framework
+  ([`52fba19`](https://github.com/cleanunicorn/quill/commit/52fba1979dbde1fefc3cbac15279e4ccec9184f5))
+
+Initial project setup with basic directory structure, CLI framework, and configuration files.
+  Includes: - Basic CLI command structure and utilities - Project setup configuration - Git
+  configuration files
+
+- Update project to use uv instead of pip
+  ([`e302f1c`](https://github.com/cleanunicorn/quill/commit/e302f1cb98b2e53ef5d02d581355d139aef4bc17))
+
+- **cli**: Announce the resolved output path before transcribing
+  ([`2d80cb6`](https://github.com/cleanunicorn/quill/commit/2d80cb684b7168e7a3a339ecf44fd508877908d6))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Fail fast when the local input file does not exist
+  ([`8b3d3bf`](https://github.com/cleanunicorn/quill/commit/8b3d3bf2b269eb818c8663354fd7b26996865473))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Format duration as HH:mm:ss and language probability as a percentage
+  ([`2966d9a`](https://github.com/cleanunicorn/quill/commit/2966d9a9501ed30e69527022c799903681142dd3))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Use YouTube title as output filename, add timestamps to transcription
+  ([`fb528ab`](https://github.com/cleanunicorn/quill/commit/fb528ab17e5c3de4473b69763924bab2286e611a))
+
+- **cli**: Validate explicit output paths before downloading
+  ([`d3ab232`](https://github.com/cleanunicorn/quill/commit/d3ab232c7dbfac4006022b192318c09c6e336965))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **short-flags**: Add short flags for model, device, language, and timestamps
+  ([`f97a3ff`](https://github.com/cleanunicorn/quill/commit/f97a3ff10d630445b018f36e7697345804c40f2d))
+
+- **timestamp**: Use HH:mm:ss format
+  ([`7ffd512`](https://github.com/cleanunicorn/quill/commit/7ffd5126ca573bd19dca0403ade0669730d47d5b))
+
+- **timestamps**: Add timestamps to transcription
+  ([`6cb6f04`](https://github.com/cleanunicorn/quill/commit/6cb6f04c2640573503a092f8f0f7059b233dfcd9))
+
+### Refactoring
+
+- **cli**: Apply the default output-name fallback once in resolve_input
+  ([`7b806ba`](https://github.com/cleanunicorn/quill/commit/7b806ba6c0281b42f67083f78935fdf7baab0c74))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Download YouTube audio with a single extract_info call
+  ([`895ef70`](https://github.com/cleanunicorn/quill/commit/895ef7015d7a32ab796a28b3c7c4b1cabd5816d3))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Extract write_transcript helper from transcribe
+  ([`28035b5`](https://github.com/cleanunicorn/quill/commit/28035b5ceead22c183187e48c2a78307fe6a8d1d))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Let download_youtube_audio own its output naming
+  ([`c6b4255`](https://github.com/cleanunicorn/quill/commit/c6b4255f33079b865785e5d8f80b8db8fc3d2856))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Move pure filename/timestamp helpers into utils
+  ([`26ad2cb`](https://github.com/cleanunicorn/quill/commit/26ad2cb543b9a1b894528a80caf5f62f1529fd79))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Name the shared download target in resolve_input
+  ([`245c579`](https://github.com/cleanunicorn/quill/commit/245c57947c280d073a65c5f907c452e5ab09f3dd))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- **cli**: Return Path objects from resolve_input
+  ([`78a56d7`](https://github.com/cleanunicorn/quill/commit/78a56d7c9157f950a81d5b8367cfcd1dba8a9f53))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
