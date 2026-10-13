@@ -9,22 +9,49 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  check:
+    name: make check (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # Quill must install and run on all three OSes (see AGENTS.md).
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: make sync
+
+      - name: Lockfile, lint, format, tests
+        run: make check
+
+      - name: CLI loads
+        run: uv run quill --help
+
+  windows:
+    # Windows runners have no GNU make, so this job runs the same commands as
+    # `make sync` / `make test` directly. Keep it in step with the Makefile.
+    name: tests (windows-latest)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
       - name: Install dependencies
         run: uv sync --dev
 
-      - name: Lint
-        run: uv run ruff check .
-
-      - name: Check formatting
-        run: uv run ruff format --check .
-
       - name: Test
         run: uv run pytest
+
+      - name: CLI loads
+        run: uv run quill --help

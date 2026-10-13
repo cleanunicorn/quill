@@ -52,3 +52,31 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "PTH"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+tag_format = "v{version}"
+commit_message = "chore(release): v{version}\n\n[skip ci]"
+commit_parser = "conventional"
+
+[tool.semantic_release.branches.master]
+match = "master"
+prerelease = false
+
+[tool.semantic_release.changelog]
+# Insert each release under the marker in CHANGELOG.md instead of
+# regenerating the file, so hand-written [Unreleased] notes survive.
+mode = "update"
+insertion_flag = "<!-- version list -->"
+exclude_commit_patterns = [
+    "^chore(\\(.*\\))?:",
+    "^ci(\\(.*\\))?:",
+    "^style(\\(.*\\))?:",
+    "^test(\\(.*\\))?:",
+    "^Merge ",
+]
+
+[tool.semantic_release.commit_parser_options]
+allowed_tags = ["build", "chore", "ci", "docs", "feat", "fix", "perf", "refactor", "style", "test"]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]

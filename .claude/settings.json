@@ -1,0 +1,14 @@
+{
+  "extraKnownMarketplaces": {
+    "agents-library": {
+      "source": {
+        "source": "github",
+        "repo": "cleanunicorn/agents-library"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true,
+    "agents-library@agents-library": true
+  }
+}

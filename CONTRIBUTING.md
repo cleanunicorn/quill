@@ -10,6 +10,8 @@ You need two tools installed (see the
 
 - [uv](https://docs.astral.sh/uv/) — manages Python and dependencies.
 - [ffmpeg](https://ffmpeg.org/) — used for audio decoding.
+- GNU `make` — runs the dev tasks (preinstalled on macOS and most Linux
+  distros; on Windows, use the `uv run` commands from the Makefile directly).
 
 ## Setup
 
@@ -19,14 +21,18 @@ cd quill
 
 # Install all dependencies into a project-local .venv.
 # uv resolves and pins the correct Python version automatically.
-uv sync
+make sync
 ```
 
 Run the CLI from the source tree with:
 
 ```bash
-uv run quill --help
+make run ARGS="--help"
 ```
+
+`make help` lists every task. [AGENTS.md](AGENTS.md) is the full working guide
+(branching, commit and PR-title rules, release automation, and the project's
+hazards) for humans and AI agents alike.
 
 ## Project layout
 
@@ -36,7 +42,8 @@ app/
     commands.py   # Click command + transcription pipeline
     utils.py      # URL detection, YouTube + file downloads, pure helpers
 tests/            # pytest suite (unit + CLI tests, no network access)
-pyproject.toml    # Project metadata, dependencies, ruff/pytest config
+pyproject.toml    # Project metadata, dependencies, ruff/pytest/release config
+Makefile          # Dev tasks: sync, run, lint, fmt, test, check
 ```
 
 The console entry point is defined in `pyproject.toml` under
@@ -57,22 +64,20 @@ Quill must install and run on macOS, Linux, and Windows.
 ## Before opening a pull request
 
 ```bash
-# Make sure the lockfile is up to date with pyproject.toml
+# If you changed dependencies in pyproject.toml, refresh the lockfile
 uv lock
 
-# Confirm a clean install and that the CLI loads
-uv sync
-uv run quill --help
-
-# Lint, check formatting, and run the tests
-uv run ruff check .
-uv run ruff format --check .
-uv run pytest
+# Format, then run everything CI runs: lockfile check, lint, format check, tests
+make fmt
+make check
 ```
 
-The [CI workflow](.github/workflows/ci.yml) runs the lint, format, and test
-checks for every pull request. Commit messages follow
-[Conventional Commits](https://www.conventionalcommits.org/) (`type(scope): subject`).
+The [CI workflow](.github/workflows/ci.yml) runs `make check` on Ubuntu and
+macOS and the tests on Windows for every pull request. Commit messages **and PR
+titles** follow [Conventional Commits](https://www.conventionalcommits.org/)
+(`type(scope): subject`); a check enforces the PR title, and the title decides
+the release version when the PR merges (see
+[AGENTS.md](AGENTS.md#release-automation)).
 
 ## Reporting issues
 
