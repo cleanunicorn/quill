@@ -196,3 +196,7 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# Claude Code: per-user settings and task worktrees
+.claude/settings.local.json
+.claude/worktrees/
