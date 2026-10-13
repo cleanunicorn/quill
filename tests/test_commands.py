@@ -125,19 +125,19 @@ def test_transcribe_direct_url_end_to_end(tmp_path, monkeypatch):
     monkeypatch.setattr(commands, "WhisperModel", FakeWhisperModel)
     monkeypatch.setattr(commands, "download_file", lambda url, target: target.touch() or target)
     runner = CliRunner()
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        result = runner.invoke(transcribe, ["https://example.com/talk.mp3"])
-        assert result.exit_code == 0
-        assert Path("talk.txt").read_text(encoding="utf-8") == " hello  world "
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(transcribe, ["https://example.com/talk.mp3"])
+    assert result.exit_code == 0
+    assert Path("talk.txt").read_text(encoding="utf-8") == " hello  world "
 
 
-def test_transcribe_rejects_empty_output_name(tmp_path):
+def test_transcribe_rejects_empty_output_name(tmp_path, monkeypatch):
     runner = CliRunner()
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        Path("audio.mp3").touch()
-        result = runner.invoke(transcribe, ["audio.mp3", ""])
-        assert result.exit_code == 1
-        assert "Invalid output file" in result.output
+    monkeypatch.chdir(tmp_path)
+    Path("audio.mp3").touch()
+    result = runner.invoke(transcribe, ["audio.mp3", ""])
+    assert result.exit_code == 1
+    assert "Invalid output file" in result.output
 
 
 def test_version_flag_reports_package_version():
@@ -159,14 +159,14 @@ class FailingWhisperModel(FakeWhisperModel):
 def test_transcribe_failure_keeps_previous_output_and_cleans_partial(tmp_path, monkeypatch):
     monkeypatch.setattr(commands, "WhisperModel", FailingWhisperModel)
     runner = CliRunner()
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        Path("audio.mp3").touch()
-        Path("out.txt").write_text("old content", encoding="utf-8")
-        result = runner.invoke(transcribe, ["audio.mp3", "out.txt"])
-        assert result.exit_code == 1
-        assert "Error: decode failed" in result.output
-        assert Path("out.txt").read_text(encoding="utf-8") == "old content"
-        assert not list(Path().glob("*.part"))
+    monkeypatch.chdir(tmp_path)
+    Path("audio.mp3").touch()
+    Path("out.txt").write_text("old content", encoding="utf-8")
+    result = runner.invoke(transcribe, ["audio.mp3", "out.txt"])
+    assert result.exit_code == 1
+    assert "Error: decode failed" in result.output
+    assert Path("out.txt").read_text(encoding="utf-8") == "old content"
+    assert not list(Path().glob("*.part"))
 
 
 class InterruptedWhisperModel(FakeWhisperModel):
@@ -182,36 +182,36 @@ class InterruptedWhisperModel(FakeWhisperModel):
 def test_transcribe_ctrl_c_exits_130_and_keeps_partial(tmp_path, monkeypatch):
     monkeypatch.setattr(commands, "WhisperModel", InterruptedWhisperModel)
     runner = CliRunner()
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        Path("audio.mp3").touch()
-        result = runner.invoke(transcribe, ["audio.mp3", "out.txt"])
-        assert result.exit_code == 130
-        assert "cancelled" in result.output
-        assert not Path("out.txt").exists()
-        partials = list(Path().glob("out.txt.*.part"))
-        assert len(partials) == 1
-        assert partials[0].read_text(encoding="utf-8") == " hello "
-        assert f"Partial transcript kept at: {partials[0]}" in result.output
+    monkeypatch.chdir(tmp_path)
+    Path("audio.mp3").touch()
+    result = runner.invoke(transcribe, ["audio.mp3", "out.txt"])
+    assert result.exit_code == 130
+    assert "cancelled" in result.output
+    assert not Path("out.txt").exists()
+    partials = list(Path().glob("out.txt.*.part"))
+    assert len(partials) == 1
+    assert partials[0].read_text(encoding="utf-8") == " hello "
+    assert f"Partial transcript kept at: {partials[0]}" in result.output
 
 
 def test_transcribe_writes_plain_transcript(tmp_path, monkeypatch):
     monkeypatch.setattr(commands, "WhisperModel", FakeWhisperModel)
     runner = CliRunner()
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        Path("audio.mp3").touch()
-        result = runner.invoke(transcribe, ["audio.mp3"])
-        assert result.exit_code == 0
-        assert Path("audio.txt").read_text(encoding="utf-8") == " hello  world "
-        assert not list(Path().glob("*.part"))
+    monkeypatch.chdir(tmp_path)
+    Path("audio.mp3").touch()
+    result = runner.invoke(transcribe, ["audio.mp3"])
+    assert result.exit_code == 0
+    assert Path("audio.txt").read_text(encoding="utf-8") == " hello  world "
+    assert not list(Path().glob("*.part"))
 
 
 def test_transcribe_writes_timestamped_transcript(tmp_path, monkeypatch):
     monkeypatch.setattr(commands, "WhisperModel", FakeWhisperModel)
     runner = CliRunner()
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        Path("audio.mp3").touch()
-        result = runner.invoke(transcribe, ["audio.mp3", "out.txt", "--timestamps"])
-        assert result.exit_code == 0
-        assert Path("out.txt").read_text(encoding="utf-8") == (
-            "[00:00:00 -> 00:00:02] hello\n[00:00:02 -> 00:00:05] world\n"
-        )
+    monkeypatch.chdir(tmp_path)
+    Path("audio.mp3").touch()
+    result = runner.invoke(transcribe, ["audio.mp3", "out.txt", "--timestamps"])
+    assert result.exit_code == 0
+    assert Path("out.txt").read_text(encoding="utf-8") == (
+        "[00:00:00 -> 00:00:02] hello\n[00:00:02 -> 00:00:05] world\n"
+    )

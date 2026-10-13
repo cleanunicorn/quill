@@ -16,7 +16,11 @@ classifiers = [
 dependencies = [
     "faster-whisper>=1.1",
     "click>=8.1",
-    "yt-dlp>=2025.1.15",
+    # YouTube changes its site often; older yt-dlp releases stop working.
+    "yt-dlp>=2026.8.19",
+    # faster-whisper 1.2.1 calls av.open(..., metadata_errors=...), which
+    # PyAV 19 removed. Drop this cap once faster-whisper stops passing it.
+    "av<19",
 ]
 
 [project.optional-dependencies]
